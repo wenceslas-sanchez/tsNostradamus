@@ -46,7 +46,7 @@ class tunnelSnake():
 
         return up_aug_ma, down_aug_ma;
 
-    def fit(self, verbose= True):
+    def fit_transform(self, verbose= True):
         """
 
         :param verbose:
