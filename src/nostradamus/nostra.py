@@ -9,66 +9,72 @@ def exception_type(arg, typed):
         raise Exception("Wrong Type")
 
 
-def tunnelSnake(serie, shift, threshold, verbose= True):
-    """
+class tunnelSnake():
 
-    :param serie: array
-    :param shift: integer, the window wanted for the moving average
-    :param threshold: float, define the level
-    :return: array, serie without outlier values
-    """
+    def __init__(self, serie, shift, threshold):
+        self.serie= serie
+        self.shift= shift
+        self.threshold= threshold
 
-    # Control type
-    exception_type(serie, (list, tuple, np.ndarray))
-    exception_type(threshold, (int, float))
-    exception_type(shift, int)
-    exception_type(verbose, bool)
+        # Control type
+        exception_type(self.serie, (list, tuple, np.ndarray))
+        exception_type(self.threshold, (int, float))
+        exception_type(self.shift, int)
+        #exception_type(verbose, bool)
 
-    assert len(serie) > shift
+        assert len(self.serie) > self.shift
+        pass
 
-
-    def moving_average(serie, shift):
-        cumsum_array= np.cumsum(serie)
-        cumsum_array[shift:]= cumsum_array[shift:] - cumsum_array[:-shift]
-        cumsum_array= cumsum_array[shift-1:]/shift
+    def __moving_average(self):
+        cumsum_array= np.cumsum(self.serie)
+        cumsum_array[self.shift:]= cumsum_array[self.shift:] - cumsum_array[:-self.shift]
+        cumsum_array= cumsum_array[self.shift-1:]/self.shift
         return cumsum_array
 
-    def augmented_borne_ma(serie, shift, threshold):
-        moving_average_serie= moving_average(serie, shift)
-        moving_average_serie= np.append(serie[0:shift], moving_average_serie[:-1])
+    def __augmented_borne_ma(self):
+        moving_average_serie= self.__moving_average()
+        moving_average_serie= np.append(self.serie[0:self.shift], moving_average_serie[:-1])
 
         up_aug_ma= moving_average_serie.copy()
-        up_aug_ma[shift:]= up_aug_ma[shift:] * (1 + threshold)
+        up_aug_ma[self.shift:]= up_aug_ma[self.shift:] * (1 + self.threshold)
 
         down_aug_ma = moving_average_serie.copy()
-        down_aug_ma[shift:] = down_aug_ma[shift:] * (1 - threshold)
+        down_aug_ma[self.shift:] = down_aug_ma[self.shift:] * (1 - self.threshold)
 
         return up_aug_ma, down_aug_ma;
 
-    # Control serie type and serie content type
-    serie= np.array(serie).astype(float)
+    def fit(self, verbose= True):
+        """
 
-    up_aug_ma, down_aug_ma= augmented_borne_ma(serie, shift, threshold)
+        :param verbose:
+        :return: array, serie without outlier values
+        """
+        # Control serie type and serie content type
+        self.serie = np.array(self.serie).astype(float)
 
-    # Which values are sup / inf to the augmented MA
-    # and get the augmented MA value when it's True
-    boolean_up = serie >= up_aug_ma
-    boolean_down = serie < down_aug_ma
-    boolean_serie = boolean_up * up_aug_ma + boolean_down * down_aug_ma
+        up_aug_ma, down_aug_ma = self.__augmented_borne_ma()
 
-    # Get the index of values we have to change
-    index_to_change = (boolean_serie != 0).nonzero()
+        # Which values are sup / inf to the augmented MA
+        # and get the augmented MA value when it's True
+        boolean_up = self.serie >= up_aug_ma
+        boolean_down = self.serie < down_aug_ma
+        boolean_serie = boolean_up * up_aug_ma + boolean_down * down_aug_ma
 
-    if verbose:
-        # We removed the shift first values, because they are always into index_to_change
-        print("Values at place {} were changed.".format(index_to_change[0][shift:]))
+        # Get the index of values we have to change
+        index_to_change = (boolean_serie != 0).nonzero()
 
-    # Replace from inital array
-    treated_serie = serie.copy()
-    treated_serie[index_to_change[0]] = boolean_serie[index_to_change[0]]
+        if verbose:
+            # We removed the shift first values, because they are always into index_to_change
+            print("Values at place {} were changed.".format(index_to_change[0][self.shift:]))
 
-    return treated_serie
+        # Replace from inital array
+        treated_serie = self.serie.copy()
+        treated_serie[index_to_change[0]] = boolean_serie[index_to_change[0]]
 
+        return treated_serie
+
+    def plot(self):
+        pass
 
 
 class BasicNostra():
