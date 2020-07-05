@@ -1,4 +1,7 @@
 import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+sns.set()
 from statsmodels.tsa.arima_model import ARIMA
 
 
@@ -73,7 +76,21 @@ class tunnelSnake():
 
         return treated_serie
 
-    def plot(self):
+    def plot(self, figsize= (8, 5)):
+        up_aug_ma, down_aug_ma = self.__augmented_borne_ma()
+
+        plt.figure(figsize= figsize)
+
+        plt.plot(self.fit(verbose= False), label= "Transformed serie", c= "darkblue", linestyle= "--")
+        plt.plot(self.serie, label= "Original serie", c= "black")
+        plt.plot(up_aug_ma, label= "Top boundary", c= "orange")
+        plt.plot(down_aug_ma, label= "Down boundary", c= "orange")
+
+        plt.xlabel("Index")
+        plt.ylabel("Values")
+        plt.legend()
+
+        plt.show()
         pass
 
 
