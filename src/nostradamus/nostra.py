@@ -77,13 +77,14 @@ class tunnelSnake():
         pass
 
 
+
 class BasicNostra():
 
     def __init__(self):
         print("Classe nostra BB")
         pass
 
-    def fit(self, serie, window, params, walk_forward= True):
+    def fit(self):
         pass
 
     def __all_parameters_arima(self, params):
