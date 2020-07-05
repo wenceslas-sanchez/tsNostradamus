@@ -123,15 +123,15 @@ class ArimaNostra():
         """
         ts_train= serie[start:window + start]
 
-        # In cas of failed
+        # In case of failed
         nan_return= np.nan, np.nan, np.array([np.nan]), np.array([np.nan]);
 
-        # if coef not stationary
+        # If coef not stationary
         try:
             arima_model = ARIMA(ts_train, order=order)
             arima_fitted = arima_model.fit(disp=False)
         except:
-            try:  # if MA coef not invertible
+            try:  # If MA coef not invertible
                 if order[1] < 1:
                     order[1] = order[1] + 1  # parameter D
                     arima_model = ARIMA(ts_train, order=order)
@@ -156,7 +156,9 @@ class ArimaNostra():
 
 
 class _procedure_train():
-
+    """
+    Mother class
+    """
     def __init__(self, serie, window, forecast_range):
         self.serie= serie
         self.window= window
