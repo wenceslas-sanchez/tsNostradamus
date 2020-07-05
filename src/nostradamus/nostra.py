@@ -81,7 +81,8 @@ class tunnelSnake():
 
         plt.figure(figsize= figsize)
 
-        plt.plot(self.fit(verbose= False), label= "Transformed serie", c= "darkblue", linestyle= "--")
+        plt.plot(self.fit_transform(verbose= False), label= "Transformed serie"
+                 , c= "darkblue", linestyle= "--", linewidth= 0.9)
         plt.plot(self.serie, label= "Original serie", c= "black")
         plt.plot(up_aug_ma, label= "Top boundary", c= "orange")
         plt.plot(down_aug_ma, label= "Down boundary", c= "orange")
