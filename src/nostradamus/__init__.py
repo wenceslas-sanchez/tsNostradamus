@@ -1,1 +1,0 @@
-from src.nostradamus import nostra

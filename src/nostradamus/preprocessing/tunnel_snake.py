@@ -1,14 +1,8 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
-from statsmodels.tsa.arima_model import ARIMA
 
-
-def exception_type(arg, typed):
-    if isinstance(arg, typed):
-        pass
-    else:
-        raise Exception("Wrong Type")
+from ..utils.error import exception_type
 
 
 class tunnelSnake():
@@ -92,81 +86,4 @@ class tunnelSnake():
         plt.legend()
 
         plt.show()
-        pass
-
-
-
-class ArimaNostra():
-
-    def __init__(self):
-        pass
-
-    def __all_parameters_arima(self, params):
-        """
-
-        :param params:
-        :return:
-        """
-        return [[i, j, k]
-                for i in range(params[0] + 1)
-                for j in range(params[1] + 1)
-                for k in range(params[2] + 1)]
-
-    def __arima_model_forecast_computing(self, serie, start, window, forecast_range, order, alpha= 0.05):
-        """
-
-        :param start:
-        :param hist_train_size:
-        :param forecast_range:
-        :param order:
-        :return:
-        """
-        ts_train= serie[start:window + start]
-
-        # In case of failed
-        nan_return= np.nan, np.nan, np.array([np.nan]), np.array([np.nan]);
-
-        # If coef not stationary
-        try:
-            arima_model = ARIMA(ts_train, order=order)
-            arima_fitted = arima_model.fit(disp=False)
-        except:
-            try:  # If MA coef not invertible
-                if order[1] < 1:
-                    order[1] = order[1] + 1  # parameter D
-                    arima_model = ARIMA(ts_train, order=order)
-                    arima_fitted = arima_model.fit(disp=False)
-                else:
-                    return nan_return
-            except:
-                return nan_return
-
-        aic = arima_fitted.aic
-        forecast, std, conf_int = arima_fitted.forecast(forecast_range, alpha= alpha)
-
-        return order, aic, conf_int, forecast;
-
-    def fit(self):
-        """
-
-        :return:
-        """
-        pass
-
-
-
-class _procedure_train():
-    """
-    Mother class
-    """
-    def __init__(self, serie, window, forecast_range):
-        self.serie= serie
-        self.window= window
-        self.forecast_range= forecast_range
-        pass
-
-    def walk_forward_train(self):
-        pass
-
-    def stacking_train(self):
         pass
