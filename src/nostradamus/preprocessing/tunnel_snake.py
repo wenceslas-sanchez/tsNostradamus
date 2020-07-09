@@ -5,9 +5,9 @@ import seaborn as sns
 from ..utils.error import exception_type
 
 
-class tunnelSnake():
+class tunnelSnake:
 
-    def __init__(self, serie, shift, threshold):
+    def __init__(self, serie, shift: int, threshold):
         self.serie= serie
         self.shift= shift
         self.threshold= threshold
@@ -21,25 +21,30 @@ class tunnelSnake():
         assert len(self.serie) > self.shift
         pass
 
-    def __moving_average(self):
+    def __moving_average(self) -> np.array:
         cumsum_array= np.cumsum(self.serie)
         cumsum_array[self.shift:]= cumsum_array[self.shift:] - cumsum_array[:-self.shift]
-        cumsum_array= cumsum_array[self.shift-1:]/self.shift
+        cumsum_array[:self.shift]= cumsum_array[self.shift: self.shift * 2][::-1]
+        #cumsum_array= cumsum_array[self.shift-1:]/self.shift
+        cumsum_array = cumsum_array / self.shift
         return cumsum_array
 
     def __augmented_borne_ma(self):
         moving_average_serie= self.__moving_average()
-        moving_average_serie= np.append(self.serie[0:self.shift], moving_average_serie[:-1])
+        # On ne veut pas garder la dernière valeur de la moyenne mobile pour décaler de 1 vers la
+        # la droite notre moyenne mobile, pour qu'une forte valeur soit prise en compte
+        # dans la moyenne la période d'après et pas sur la période d'observation de la valeur aberante
+        moving_average_serie= np.append(moving_average_serie[0], moving_average_serie[:-1])
 
         up_aug_ma= moving_average_serie.copy()
-        up_aug_ma[self.shift:]= up_aug_ma[self.shift:] * (1 + self.threshold)
+        up_aug_ma = up_aug_ma * (1 + self.threshold)
 
         down_aug_ma = moving_average_serie.copy()
-        down_aug_ma[self.shift:] = down_aug_ma[self.shift:] * (1 - self.threshold)
+        down_aug_ma = down_aug_ma * (1 - self.threshold)
 
         return up_aug_ma, down_aug_ma;
 
-    def fit_transform(self, verbose= True):
+    def fit_transform(self, verbose: bool= True) -> np.array:
         """
 
         :param verbose:
@@ -69,7 +74,8 @@ class tunnelSnake():
 
         return treated_serie
 
-    def plot(self, figsize= (8, 5)):
+
+    def plot(self, figsize: tuple= (8, 5)) -> None:
         sns.set()
         up_aug_ma, down_aug_ma = self.__augmented_borne_ma()
 
