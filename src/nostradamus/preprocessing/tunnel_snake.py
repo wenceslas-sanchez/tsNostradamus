@@ -16,16 +16,14 @@ class tunnelSnake:
         exception_type(self.serie, (list, tuple, np.ndarray))
         exception_type(self.threshold, (int, float))
         exception_type(self.shift, int)
-        #exception_type(verbose, bool)
 
-        assert len(self.serie) > self.shift
+        assert len(self.serie) >= self.shift * 2
         pass
 
     def __moving_average(self) -> np.array:
         cumsum_array= np.cumsum(self.serie)
         cumsum_array[self.shift:]= cumsum_array[self.shift:] - cumsum_array[:-self.shift]
         cumsum_array[:self.shift]= cumsum_array[self.shift: self.shift * 2][::-1]
-        #cumsum_array= cumsum_array[self.shift-1:]/self.shift
         cumsum_array = cumsum_array / self.shift
         return cumsum_array
 
@@ -66,7 +64,7 @@ class tunnelSnake:
 
         if verbose:
             # We removed the shift first values, because they are always into index_to_change
-            print("Values at place {} were changed.".format(index_to_change[0][self.shift:]))
+            print("Values at place {} were changed.".format(index_to_change[0]))
 
         # Replace from inital array
         treated_serie = self.serie.copy()
