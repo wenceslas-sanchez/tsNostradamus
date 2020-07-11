@@ -2,6 +2,8 @@ import pandas as pd
 import numpy as np
 
 import nostradamus.preprocessing as ns_preprocessing
+import nostradamus.models.arimanostra as models
+
 
 data= pd.read_excel(r"superstore.xls")
 
@@ -22,7 +24,14 @@ furniture_max= furniture["Sales"].resample('MS').max().values
 furniture_min= furniture["Sales"].resample('MS').min().values
 
 
+## tunnelSnake testing
+#test= ns_preprocessing.tunnelSnake(furniture_min, 3, 0.5)
+#print(test.fit_transform())
+#test.plot()
 
-test= ns_preprocessing.tunnelSnake(furniture_mean, 3, 0.5)
-print(test.fit_transform())
-test.plot()
+# ARIMANOSTRA test model
+arima_model= models.ArimaNostra(furniture_mean, [2, 1, 1], 24, 3)
+arima_fit= arima_model.forecast()["mean"]
+print(arima_fit)
+
+arima_model.plot(arima_fit)
