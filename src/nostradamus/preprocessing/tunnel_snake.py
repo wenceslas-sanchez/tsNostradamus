@@ -2,7 +2,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-from ..utils.error import exception_type
+from ..utils.error import (exception_type
+                            , check_is_int)
 
 
 class tunnelSnake:
@@ -15,7 +16,7 @@ class tunnelSnake:
         # Control type
         exception_type(self.serie, (list, tuple, np.ndarray))
         exception_type(self.threshold, (int, float))
-        exception_type(self.shift, int)
+        check_is_int(self.shift)
 
         assert len(self.serie) >= self.shift * 2
         pass
