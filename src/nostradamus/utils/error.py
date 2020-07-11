@@ -21,3 +21,15 @@ def check_is_int(arg) -> None:
         raise ValueError("Only integers are allowed")
     pass
 
+
+def check_is_in(arg, list_of_values):
+    if arg in list_of_values:
+        pass
+    else:
+        raise ValueError("Wrong argument value")
+
+def check_key_is_in(list_of_keys, arg):
+    if set(list_of_keys).issubset(arg):
+        pass
+    else:
+        raise ValueError("Wrong argument value")
