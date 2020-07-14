@@ -33,3 +33,9 @@ def check_key_is_in(list_of_keys, arg):
         pass
     else:
         raise ValueError("Wrong argument value")
+
+def check_method_lauched(arg, value):
+    if arg != value:
+        pass
+    else:
+        raise NotImplementedError("Need to launch a method before")
