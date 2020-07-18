@@ -30,8 +30,10 @@ furniture_min= furniture["Sales"].resample('MS').min().values
 #test.plot()
 
 # ARIMANOSTRA test model
-arima_model= models.ArimaNostra(furniture_mean, [2, 1, 1], 24, 3)
-arima_fit= arima_model.forecast()["mean"]
-print(arima_fit)
+arima_model= models.ArimaNostra(furniture_mean, [2, 1, 1], 24, 12)
+arima_model.fit()
+arima_model.error()
+arima_model.forecast()
+arima_model.plot_diagnostic()
 
-arima_model.plot(arima_fit)
+

@@ -2,6 +2,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.ticker import MaxNLocator
 import seaborn as sns
+import scipy
+from scipy.stats import skewnorm
 
 sns.set()
 import warnings
@@ -14,8 +16,9 @@ from ..utils.error import (exception_type
 , check_is_int
 , check_is_in
 , check_key_is_in
-, check_method_lauched
-                           )
+, check_method_lauched)
+
+from ..utils.normal_hist import (compare_hist_to_norm_ax)
 
 
 class ArimaNostra:
@@ -261,21 +264,42 @@ class ArimaNostra:
         plt.show()
         pass
 
-    def plot_error_by_period(self, figsize: tuple = (8, 5), error_type= "mae", hist= True, bins= 10) -> None:
+
+    def plot_error_by_period(self, figsize: tuple = (8, 5), error_dist= None, bins= 10) -> None:
+
+        error_type= "mae"
         if self.error_by_periods is None:
             self.error(error_type)
 
+        if error_dist is None:
+            error_dist= "no"
+
         ax = plt.figure(figsize= figsize).gca()
+
         # hist
-        if hist:
+        if error_dist == "hist":
             error_matrix_period= np.abs(self.error_by_models).T
 
             for x in range(self.forecast_range):
-                weights = np.ones_like(error_matrix_period[x]) / len(error_matrix_period[x])
+                weights= np.ones_like(error_matrix_period[x]) / len(error_matrix_period[x])
                 ax.hist(error_matrix_period[x], bins= bins, bottom= x, orientation= "horizontal"
                         , weights= weights, color= "purple", alpha= 0.3)
 
-            plt.xlim((-1, self.forecast_range + 0.2))
+            plt.xlim((-0.1, self.forecast_range))
+
+        elif error_dist == "boxplot":
+            error_matrix_period = np.abs(self.error_by_models).T
+            error_matrix_period_list= []
+            for x in range(self.forecast_range):
+                error_matrix_period_list.append(error_matrix_period[x])
+
+            ax.boxplot(error_matrix_period_list, positions= np.arange(0, self.forecast_range, 1).astype(int))
+
+        elif error_dist == "no":
+            pass
+
+        else:
+            raise ValueError()
 
         ax.plot(np.arange(0, self.forecast_range, 1).astype(int), self.error_by_periods, color= "purple")
 
@@ -286,10 +310,48 @@ class ArimaNostra:
 
         pass
 
-    def plot_forecast(self):
+    def plot_forecast(self, figsize: tuple = (8, 5)) -> None:
         # only ploting unobservable values
+        plt.figure(figsize=figsize)
+
+        serie_forecast = self.forecast_[self.method]
+
+        plt.plot(self.serie, label="Original serie")
+        plt.plot(np.arange(self.len_serie, self.len_serie + self.forecast_range, 1)
+                 , serie_forecast[-self.forecast_range:], label="Forecast")
+
+        plt.show()
+
         pass
 
-    def plot_diagnostic(self):
+    def plot_diagnostic(self, bins= 25):
         # error
+        residuals= self.error_by_models.flatten()
+        norm_residuals= (residuals - np.mean(residuals))/np.std(residuals)
+
+        fig, ax= plt.subplots(nrows= 2, ncols= 1, figsize= (15, 10))
+
+        # Histogram
+        mu, std = scipy.stats.norm.fit(residuals)
+
+        ax[0].hist(residuals, bins=bins, density=True, alpha=0.6, color='purple', label="Données")
+
+        # Plot le PDF.
+        xmin, xmax = ax[0].get_xlim()
+        X = np.linspace(xmin, xmax)
+
+        ax[0].plot(X, scipy.stats.norm.pdf(X, mu, std), label="Normal Distribution")
+        ax[0].plot(X, skewnorm.pdf(X, *skewnorm.fit(residuals)), color='black', label="Skewed Normal Distribution")
+
+        mu, std = scipy.stats.norm.fit(residuals)
+        sk = scipy.stats.skew(residuals)
+
+        title2 = "Moments mu: {}, sig: {}, sk: {}".format(round(mu, 4), round(std, 4), round(sk, 4))
+        ax[0].set_ylabel("Fréquence", rotation=90)
+        ax[0].set_title(title2)
+        ax[0].legend()
+
+        # qqplot
+
+        plt.show()
         pass
