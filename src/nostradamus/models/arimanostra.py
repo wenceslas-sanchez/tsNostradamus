@@ -2,8 +2,10 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.ticker import MaxNLocator
 import seaborn as sns
+
 import scipy
 from scipy.stats import skewnorm
+from scipy.optimize import brute
 
 sns.set()
 import warnings
@@ -17,8 +19,6 @@ from ..utils.error import (exception_type
 , check_is_in
 , check_key_is_in
 , check_method_lauched)
-
-from ..utils.normal_hist import (compare_hist_to_norm_ax)
 
 
 class ArimaNostra:
@@ -37,7 +37,8 @@ class ArimaNostra:
         """
 
         if enforce_complexity is None:
-            enforce_complexity = {"p": [], "d": [], "q": []}
+            #enforce_complexity = {"p": [], "d": [], "q": []}
+            enforce_complexity= [0, 0, 0]
 
         self.serie = serie
         self.max_order_set = max_order_set
@@ -64,7 +65,7 @@ class ArimaNostra:
         check_is_int(self.forecast_range)
 
         check_is_in(self.metric, ["aic", "bic"])
-        check_key_is_in(["p", "d", "q"], self.enforce_complexity)
+        #check_key_is_in(["p", "d", "q"], self.enforce_complexity)
         pass
 
     def __all_3_permutations(self):
@@ -111,6 +112,61 @@ class ArimaNostra:
             , "start": start
                 }
 
+    def __fit_optim_arima(self, order, start):
+        """
+        """
+        serie_train = self.serie[start:self.train_len + start]
+
+        try:
+            arima_model = ARIMA(serie_train, order=order)
+            arima_fitted = arima_model.fit(disp=False)
+
+            aic = arima_fitted.aic
+            bic = arima_fitted.bic
+            forecasting, std, conf_int = arima_fitted.forecast(self.forecast_range, alpha=self.alpha)
+
+            max_val = max(self.serie[start:start + self.train_len])
+            min_val = min(self.serie[start:start + self.train_len])
+            min_bool = sum(forecasting < min_val) == 0  # ne prend que les modeles qui predisent des churn positifs
+            max_bool = sum(forecasting > max_val) == 0
+
+            if max_bool & min_bool:
+                return aic
+
+            return 10e6
+
+        except:
+            return 10e6
+
+    def __generate_grid_from_param(self):
+        """
+        """
+        return tuple([slice(self.enforce_complexity[i], self.max_order_set[i], 1) \
+                      for i in range(len(self.max_order_set))])
+
+    def __search_for_the_goodone(self, start):
+        """
+        args[0]= ts_churn_volume
+        args[1]= i
+        args[2]= length_train
+        args[3]= forecast_range
+
+        """
+        print("Sample {}".format(start))
+        grid_params= self.__generate_grid_from_param()
+
+        best_order= brute(self.__fit_optim_arima
+                           , ranges= grid_params
+                           , args= [start]
+                           , finish= None
+                           )
+
+        best_order= best_order.astype('int32')
+
+        return self.__fit(start, order=best_order)
+
+
+
     def __mean_time_weighted(self, mat_pred_during_time):
         shape_mat_transpose = mat_pred_during_time.T.shape[0]
         stock_wma = []
@@ -146,7 +202,7 @@ class ArimaNostra:
         return stock_wma
 
     def __time_looping(self):
-        return [self.__select_best_model(i) for i in range(self.num_forecasting)]
+        return [self.__search_for_the_goodone(i) for i in range(self.num_forecasting)]
 
     def __order_looping(self, start):
         all_possible_order_permutation = self.__all_3_permutations()
