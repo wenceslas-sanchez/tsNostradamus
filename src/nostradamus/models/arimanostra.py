@@ -204,25 +204,6 @@ class ArimaNostra:
     def __time_looping(self):
         return [self.__search_for_the_goodone(i) for i in range(self.num_forecasting)]
 
-    def __order_looping(self, start):
-        all_possible_order_permutation = self.__all_3_permutations()
-        return [self.__fit(start, ord) for ord in all_possible_order_permutation
-                if ord[0] not in self.enforce_complexity["p"]
-                and ord[1] not in self.enforce_complexity["d"]
-                and ord[2] not in self.enforce_complexity["q"]
-                ]
-
-    def __select_best_model(self, start):
-        if self.verbose:
-            print("Sample {}".format(start))
-
-        all_models = self.__order_looping(start)
-
-        all_criteria = np.array([x["metrics"][self.metric] for x in all_models])
-        all_criteria[np.isnan(all_criteria)] = 10e6
-        min_index = all_criteria.argmin()
-
-        return all_models[min_index]
 
     def __error_models(self):
         # error for each model
