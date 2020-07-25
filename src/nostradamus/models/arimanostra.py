@@ -2,10 +2,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.ticker import MaxNLocator
 import seaborn as sns
-
 sns.set()
 import warnings
-
 warnings.filterwarnings("ignore")
 
 import scipy
@@ -69,18 +67,7 @@ class ArimaNostra:
 
         pass
 
-    def __all_3_permutations(self) -> List[List[int]]:
-        """
-
-        :param max_order_set:
-        :return: each possible permutations from perm_list parameters
-        """
-        return [[i, j, k]
-                for i in range(self.max_order_set[0] + 1)
-                for j in range(self.max_order_set[1] + 1)
-                for k in range(self.max_order_set[2] + 1)]
-
-    def __fit(self, start:int, order:Iterable[int]) -> Dict[str, Any]:
+    def __fit(self, start: int, order: Iterable[int]) -> Dict[str, Any]:
         """
 
         :param start:
@@ -113,7 +100,7 @@ class ArimaNostra:
             , "start": start
                 }
 
-    def __fit_optim_arima(self, order:Iterable[int], start:int) -> float:
+    def __fit_optim_arima(self, order: Iterable[int], start: int) -> float:
         """
         """
         serie_train = self.serie[start:self.train_len + start]
@@ -138,7 +125,7 @@ class ArimaNostra:
                 elif self.metric == "bic":
                     return bic
                 else:
-                    raise ValueError("")
+                    raise ValueError("Select a valid error metric")
 
             return 10e6
 
@@ -151,7 +138,7 @@ class ArimaNostra:
         return tuple([slice(self.enforce_complexity[i], self.max_order_set[i], 1) \
                       for i in range(len(self.max_order_set))])
 
-    def __search_for_the_goodone(self, start:int) -> Dict[str, Any]:
+    def __search_for_the_goodone(self, start: int) -> Dict[str, Any]:
         """
         args[0]= ts_churn_volume
         args[1]= i
@@ -168,11 +155,10 @@ class ArimaNostra:
                            , finish=None
                            )
         best_order = best_order.astype('int32')
-        print(best_order)
 
         return self.__fit(start, order=best_order)
 
-    def __mean_time_weighted(self, mat_pred_during_time:np.ndarray) -> List[np.ndarray]:
+    def __mean_time_weighted(self, mat_pred_during_time: np.ndarray) -> List[np.ndarray]:
         shape_mat_transpose = mat_pred_during_time.T.shape[0]
         stock_wma = []
         num_notzero_col = np.count_nonzero(mat_pred_during_time, axis=0)
@@ -384,7 +370,7 @@ class ArimaNostra:
         ax[0].plot(X, skewnorm.pdf(X, *skewnorm.fit(residuals)), color='black', label="Skewed Normal Distribution")
 
         mu, std = scipy.stats.norm.fit(residuals)
-        sk = scipy.stats.skew(residuals)[0] # erreur possible avec l'ajout du [0]
+        sk = scipy.stats.skew(residuals)[0]  # erreur possible avec l'ajout du [0]
 
         title2 = "Moments mu: {}, sig: {}, sk: {}".format(round(mu, 4), round(std, 4), round(sk, 4))
         ax[0].set_ylabel("Fréquence", rotation=90)
