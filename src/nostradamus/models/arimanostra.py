@@ -3,14 +3,16 @@ import matplotlib.pyplot as plt
 from matplotlib.ticker import MaxNLocator
 import seaborn as sns
 
-import scipy
-from scipy.stats import skewnorm
-from scipy.optimize import brute
-
 sns.set()
 import warnings
 
 warnings.filterwarnings("ignore")
+
+import scipy
+from scipy.stats import skewnorm
+from scipy.optimize import brute
+
+from typing import Any, Iterable, List, Dict, Tuple
 
 from statsmodels.tsa.arima_model import ARIMA
 
@@ -36,9 +38,15 @@ class ArimaNostra:
         :param alpha:
         """
 
+        # Control type
+        exception_type(serie, (list, tuple, np.ndarray))
+        check_is_int(train_len)
+        check_is_int(forecast_range)
+        check_is_in(metric.lower(), ["aic", "bic"])
+
         if enforce_complexity is None:
-            #enforce_complexity = {"p": [], "d": [], "q": []}
-            enforce_complexity= [0, 0, 0]
+            # enforce_complexity = {"p": [], "d": [], "q": []}
+            enforce_complexity = [0, 0, 0]
 
         self.serie = serie
         self.max_order_set = max_order_set
@@ -47,28 +55,21 @@ class ArimaNostra:
         self.forecast_range = forecast_range
         self.walk_forward = walk_forward
         self.alpha = alpha
-        self.metric = metric
+        self.metric = metric.lower()
         self.num_forecasting = self.len_serie - self.train_len + 1
         self.verbose = verbose
         self.enforce_complexity = enforce_complexity
 
-        self.fit_= None
-        self.forecast_= None
-        self.method= None
-        self.error_by_models= None
-        self.error_by_periods= None
-        self.metric_error= None
+        self.fit_ = None
+        self.forecast_ = None
+        self.method = None
+        self.error_by_models = None
+        self.error_by_periods = None
+        self.metric_error = None
 
-        # Control type
-        exception_type(self.serie, (list, tuple, np.ndarray))
-        check_is_int(self.train_len)
-        check_is_int(self.forecast_range)
-
-        check_is_in(self.metric, ["aic", "bic"])
-        #check_key_is_in(["p", "d", "q"], self.enforce_complexity)
         pass
 
-    def __all_3_permutations(self):
+    def __all_3_permutations(self) -> List[List[int]]:
         """
 
         :param max_order_set:
@@ -79,7 +80,7 @@ class ArimaNostra:
                 for j in range(self.max_order_set[1] + 1)
                 for k in range(self.max_order_set[2] + 1)]
 
-    def __fit(self, start, order):
+    def __fit(self, start:int, order:Iterable[int]) -> Dict[str, Any]:
         """
 
         :param start:
@@ -112,7 +113,7 @@ class ArimaNostra:
             , "start": start
                 }
 
-    def __fit_optim_arima(self, order, start):
+    def __fit_optim_arima(self, order:Iterable[int], start:int) -> float:
         """
         """
         serie_train = self.serie[start:self.train_len + start]
@@ -125,26 +126,32 @@ class ArimaNostra:
             bic = arima_fitted.bic
             forecasting, std, conf_int = arima_fitted.forecast(self.forecast_range, alpha=self.alpha)
 
+            # forecast coherence
             max_val = max(self.serie[start:start + self.train_len])
             min_val = min(self.serie[start:start + self.train_len])
-            min_bool = sum(forecasting < min_val) == 0  # ne prend que les modeles qui predisent des churn positifs
+            min_bool = sum(forecasting < min_val) == 0
             max_bool = sum(forecasting > max_val) == 0
 
             if max_bool & min_bool:
-                return aic
+                if self.metric == "aic":
+                    return aic
+                elif self.metric == "bic":
+                    return bic
+                else:
+                    raise ValueError("")
 
             return 10e6
 
         except:
             return 10e6
 
-    def __generate_grid_from_param(self):
+    def __generate_grid_from_param(self) -> Tuple[slice]:
         """
         """
         return tuple([slice(self.enforce_complexity[i], self.max_order_set[i], 1) \
                       for i in range(len(self.max_order_set))])
 
-    def __search_for_the_goodone(self, start):
+    def __search_for_the_goodone(self, start:int) -> Dict[str, Any]:
         """
         args[0]= ts_churn_volume
         args[1]= i
@@ -153,21 +160,19 @@ class ArimaNostra:
 
         """
         print("Sample {}".format(start))
-        grid_params= self.__generate_grid_from_param()
+        grid_params = self.__generate_grid_from_param()
 
-        best_order= brute(self.__fit_optim_arima
-                           , ranges= grid_params
-                           , args= [start]
-                           , finish= None
+        best_order = brute(self.__fit_optim_arima
+                           , ranges=grid_params
+                           , args=[start]
+                           , finish=None
                            )
-
-        best_order= best_order.astype('int32')
+        best_order = best_order.astype('int32')
+        print(best_order)
 
         return self.__fit(start, order=best_order)
 
-
-
-    def __mean_time_weighted(self, mat_pred_during_time):
+    def __mean_time_weighted(self, mat_pred_during_time:np.ndarray) -> List[np.ndarray]:
         shape_mat_transpose = mat_pred_during_time.T.shape[0]
         stock_wma = []
         num_notzero_col = np.count_nonzero(mat_pred_during_time, axis=0)
@@ -201,11 +206,10 @@ class ArimaNostra:
 
         return stock_wma
 
-    def __time_looping(self):
+    def __time_looping(self) -> List[Dict[str, Any]]:
         return [self.__search_for_the_goodone(i) for i in range(self.num_forecasting)]
 
-
-    def __error_models(self):
+    def __error_models(self) -> np.ndarray:
         # error for each model
 
         error_list = []
@@ -217,19 +221,19 @@ class ArimaNostra:
         self.error_by_models = np.array(error_list)
         return self.error_by_models
 
-    def fit(self):
-        self.fit_= self.__time_looping()
+    def fit(self) -> List[Dict[str, Any]]:
+        self.fit_ = self.__time_looping()
 
-        self.__error_models() # compute error
+        self.__error_models()  # compute error
         return self.fit_
 
-    def forecast(self, method= "tw_mean"):
+    def forecast(self, method: str = "tw_mean") -> Dict[str, np.ndarray]:
         """
         Forecast_serie = return de fit !
 
         :return:
         """
-        self.method= method
+        self.method = method
 
         mat_pred_during_time = np.zeros((self.num_forecasting, self.num_forecasting + self.forecast_range - 1))
 
@@ -241,30 +245,29 @@ class ArimaNostra:
         mean_time_pred = np.nanmean(np.where(mat_pred_during_time != 0, mat_pred_during_time, np.nan), axis=0)
         pred_wm = np.array(self.__mean_time_weighted(mat_pred_during_time))
 
-        self.forecast_= {"mean": mean_time_pred
-                            , "tw_mean": pred_wm
-                        }
+        self.forecast_ = {"mean": mean_time_pred
+            , "tw_mean": pred_wm
+                          }
 
         return self.forecast_
 
-
-    def error(self, error_type= "mae"):
+    def error(self, error_type: str = "mae") -> np.ndarray:
         # forecast error
         if error_type == "mae":
-            self.error_by_periods= np.mean(np.abs(self.error_by_models), axis= 0)
-            self.metric_error= np.mean(self.error_by_periods)
+            self.error_by_periods = np.mean(np.abs(self.error_by_models), axis=0)
+            self.metric_error = np.mean(self.error_by_periods)
             return self.metric_error
 
         elif error_type == "rmse":
-            self.error_by_periods= np.sqrt(np.mean(np.square(self.error_by_models), axis= 0))
-            self.metric_error= np.mean(self.error_by_periods)
+            self.error_by_periods = np.sqrt(np.mean(np.square(self.error_by_models), axis=0))
+            self.metric_error = np.mean(self.error_by_periods)
             return self.metric_error
         # add other error computing methods
         else:
-            raise ValueError("Select ")
+            raise ValueError("Select a valid metric error")
         pass
 
-    def plot_models(self, figsize: tuple = (8, 5), random_state= 55, legend= True) -> None:
+    def plot_models(self, figsize: Tuple = (8, 5), random_state: int = 55, legend: bool = True) -> None:
 
         plt.figure(figsize=figsize)
 
@@ -278,21 +281,22 @@ class ArimaNostra:
 
             pred_t1 = self.fit_[i]
             plt.plot(np.arange(self.train_len + i, self.train_len + self.forecast_range + i, 1)
-                     , pred_t1["forecast"], c= hex_number
-                     , label= "Sample {} : Order {}".format(i, pred_t1["order"]))
+                     , pred_t1["forecast"], c=hex_number
+                     , label="Sample {} : Order {}".format(i, pred_t1["order"]))
 
         if legend:
             plt.legend()
+
         plt.show()
         pass
 
-    def plot(self, figsize: tuple = (8, 5)) -> None:
+    def plot(self, figsize: Tuple = (8, 5)) -> None:
         # Need to forecast beafore
         check_method_lauched(self.method, None)
 
         plt.figure(figsize=figsize)
 
-        serie_forecast= self.forecast_[self.method]
+        serie_forecast = self.forecast_[self.method]
 
         plt.plot(self.serie, label="Original serie")
         plt.plot(np.arange(self.train_len, self.len_serie + self.forecast_range, 1)
@@ -301,36 +305,35 @@ class ArimaNostra:
         plt.show()
         pass
 
+    def plot_error_by_period(self, figsize: Tuple = (8, 5), error_dist: str = None, bins: int = 10) -> None:
 
-    def plot_error_by_period(self, figsize: tuple = (8, 5), error_dist= None, bins= 10) -> None:
-
-        error_type= "mae"
+        error_type = "mae"
         if self.error_by_periods is None:
             self.error(error_type)
 
         if error_dist is None:
-            error_dist= "no"
+            error_dist = "no"
 
-        ax = plt.figure(figsize= figsize).gca()
+        ax = plt.figure(figsize=figsize).gca()
 
         # hist
         if error_dist == "hist":
-            error_matrix_period= np.abs(self.error_by_models).T
+            error_matrix_period = np.abs(self.error_by_models).T
 
             for x in range(self.forecast_range):
-                weights= np.ones_like(error_matrix_period[x]) / len(error_matrix_period[x])
-                ax.hist(error_matrix_period[x], bins= bins, bottom= x, orientation= "horizontal"
-                        , weights= weights, color= "purple", alpha= 0.3)
+                weights = np.ones_like(error_matrix_period[x]) / len(error_matrix_period[x])
+                ax.hist(error_matrix_period[x], bins=bins, bottom=x, orientation="horizontal"
+                        , weights=weights, color="purple", alpha=0.3)
 
             plt.xlim((-0.1, self.forecast_range))
 
         elif error_dist == "boxplot":
             error_matrix_period = np.abs(self.error_by_models).T
-            error_matrix_period_list= []
+            error_matrix_period_list = []
             for x in range(self.forecast_range):
                 error_matrix_period_list.append(error_matrix_period[x])
 
-            ax.boxplot(error_matrix_period_list, positions= np.arange(0, self.forecast_range, 1).astype(int))
+            ax.boxplot(error_matrix_period_list, positions=np.arange(0, self.forecast_range, 1).astype(int))
 
         elif error_dist == "no":
             pass
@@ -338,7 +341,7 @@ class ArimaNostra:
         else:
             raise ValueError()
 
-        ax.plot(np.arange(0, self.forecast_range, 1).astype(int), self.error_by_periods, color= "purple")
+        ax.plot(np.arange(0, self.forecast_range, 1).astype(int), self.error_by_periods, color="purple")
 
         ax.xaxis.set_major_locator(MaxNLocator(integer=True))
         plt.xlabel("Period")
@@ -347,7 +350,7 @@ class ArimaNostra:
 
         pass
 
-    def plot_forecast(self, figsize: tuple = (8, 5)) -> None:
+    def plot_forecast(self, figsize: Tuple = (8, 5)) -> None:
         # only ploting unobservable values
         plt.figure(figsize=figsize)
 
@@ -361,12 +364,12 @@ class ArimaNostra:
 
         pass
 
-    def plot_diagnostic(self, bins= 25):
+    def plot_diagnostic(self, bins: int = 25) -> None:
         # error
-        residuals= self.error_by_models.flatten()
-        norm_residuals= (residuals - np.mean(residuals))/np.std(residuals)
+        residuals = self.error_by_models.flatten()
+        norm_residuals = (residuals - np.mean(residuals)) / np.std(residuals)
 
-        fig, ax= plt.subplots(nrows= 2, ncols= 1, figsize= (15, 10))
+        fig, ax = plt.subplots(nrows=2, ncols=1, figsize=(15, 10))
 
         # Histogram
         mu, std = scipy.stats.norm.fit(residuals)
@@ -381,7 +384,7 @@ class ArimaNostra:
         ax[0].plot(X, skewnorm.pdf(X, *skewnorm.fit(residuals)), color='black', label="Skewed Normal Distribution")
 
         mu, std = scipy.stats.norm.fit(residuals)
-        sk = scipy.stats.skew(residuals)
+        sk = scipy.stats.skew(residuals)[0] # erreur possible avec l'ajout du [0]
 
         title2 = "Moments mu: {}, sig: {}, sk: {}".format(round(mu, 4), round(std, 4), round(sk, 4))
         ax[0].set_ylabel("Fréquence", rotation=90)
