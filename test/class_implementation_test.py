@@ -30,13 +30,16 @@ furniture_min= furniture["Sales"].resample('MS').min().values
 #test.plot()
 
 # ARIMANOSTRA test model
-arima_model= models.ArimaNostra(furniture_mean, [7, 3, 4], 24, 12, enforce_complexity= [2, 0, 2])
+arima_model= models.ArimaNostra(furniture_mean, [5, 2, 3], 24, 12, enforce_complexity= [1, 0, 1])
+# print(arima_model.grid_params)
 arima_model.fit()
-arima_model.plot_models()
+# arima_model.forecast()
+# arima_model.plot_models()
+# arima_model.plot_forecast()
+# arima_model.plot()
+# arima_model.plot_error_by_period()
+# arima_model.plot_diagnostic()
 
-arima_model.forecast()
-arima_model.plot()
-arima_model.plot_error_by_period()
-arima_model.plot_forecast()
-arima_model.plot_diagnostic()
+# lancer le code genere une erreur,  et les courbes ne sont pas toutes bien sortie !!!
+# add enforce complexity, time interface, manage model imposibility, by-pass brute for optimize.minimize scipy
 

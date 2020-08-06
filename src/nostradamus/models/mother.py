@@ -18,6 +18,8 @@ from statsmodels.api import add_constant
 from statsmodels import regression
 from statsmodels.graphics.tsaplots import plot_acf
 
+from tqdm import tqdm
+
 from ..utils.error import (exception_type
 , check_is_int
 , check_is_in
@@ -38,14 +40,15 @@ class MotherModel():
         pass
 
 
+
 class ArimaMother(MotherModel):
     """
     Mother class of ARIMA like models
     """
 
-    def __init__(self, serie: np.ndarray, max_order_set, train_len: int, forecast_range: int
+    def __init__(self, serie: np.ndarray, max_order_set: Iterable[int], train_len: int, forecast_range: int
                  , walk_forward: bool = True, alpha: float = 0.05, metric: str = "aic", verbose: bool = True
-                 , enforce_complexity: Iterable[Any] = None):
+                 , enforce_complexity: Iterable[int] = None):
         """
 
         :param serie:
@@ -62,10 +65,6 @@ class ArimaMother(MotherModel):
         check_is_int(forecast_range)
         check_is_in(metric.lower(), ["aic", "bic"])
 
-        if enforce_complexity is None:
-            # enforce_complexity = {"p": [], "d": [], "q": []}
-            enforce_complexity = [0, 0, 0]
-
         self.serie = serie
         self.max_order_set = max_order_set
         self.len_serie = len(serie)
@@ -77,6 +76,11 @@ class ArimaMother(MotherModel):
         self.num_forecasting = self.len_serie - self.train_len + 1
         self.verbose = verbose
         self.enforce_complexity = enforce_complexity
+
+        if self.enforce_complexity is None:
+            # enforce_complexity = {"p": [], "d": [], "q": []}
+            self.enforce_complexity = [0 for i in range(len(self.max_order_set))]
+
 
         self.fit_ = None
         self.forecast_ = None
@@ -136,7 +140,12 @@ class ArimaMother(MotherModel):
         return {"1": 1}
 
     def time_looping(self) -> List[Dict[str, Any]]:
-        return [self.search_for_the_goodone(i) for i in range(self.num_forecasting)]
+        good_list= []
+        # return [self.search_for_the_goodone(i) for i in range(self.num_forecasting)]
+        for i in tqdm(range(self.num_forecasting), desc= "Computing"):
+            good_list.append(self.search_for_the_goodone(i))
+
+        return good_list
 
     def error_models(self) -> np.ndarray:
         # error for each model

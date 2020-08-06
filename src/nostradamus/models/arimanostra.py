@@ -10,12 +10,15 @@ from ..models.mother import ArimaMother
 
 class ArimaNostra(ArimaMother):
 
-    def __init__(self, serie, max_order_set, train_len, forecast_range
-                 , walk_forward=True, alpha=0.05, metric="aic", verbose=True
-                 , enforce_complexity=None):
+    def __init__(self, serie: np.ndarray, max_order_set: Iterable[int], train_len: int, forecast_range: int
+                 , walk_forward: bool =True, alpha: float=0.05, metric: str ="aic", verbose: bool =True
+                 , enforce_complexity: Iterable[int]=None):
 
         super().__init__(serie, max_order_set, train_len, forecast_range
-                         , walk_forward=walk_forward, alpha=alpha, metric=metric, verbose=verbose)
+                         , walk_forward=walk_forward, alpha=alpha, metric=metric, verbose=verbose
+                         , enforce_complexity= enforce_complexity, workers= None)
+
+        self.grid_params = self.generate_grid_from_param()
 
         pass
 
@@ -92,11 +95,10 @@ class ArimaNostra(ArimaMother):
         args[3]= forecast_range
 
         """
-        print("Sample {}".format(start))
-        grid_params = self.generate_grid_from_param()
+        # print("Sample {}".format(start))
 
         best_order = brute(self.__fit_optim_arima
-                           , ranges=grid_params
+                           , ranges= self.grid_params
                            , args=[start]
                            , finish=None
                            )
