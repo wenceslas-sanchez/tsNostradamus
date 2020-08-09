@@ -1,6 +1,10 @@
 import numpy as np
-from statsmodels.tsa.statespace.sarimax import SARIMAX
+import warnings
 
+warnings.filterwarnings("ignore")
+from scipy.optimize import brute
+from typing import Any, Iterable, List, Dict, Tuple
+#from statsmodels.tsa.
 from ..models.mother import ArimaMother
 
 class SarimaNostra(ArimaMother):
