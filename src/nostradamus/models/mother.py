@@ -40,10 +40,12 @@ class MotherModel():
         pass
 
 
-
 class ArimaMother(MotherModel):
     """
-    Mother class of ARIMA like models
+    Mother class of ARIMA like models. In our modelisation, it supports ARIMA and SARIMA models.
+    Some methods are called into ArimaNostra AND SarimaNostra (for instance generate_grid_from_param).
+    Another method is used as an "abstract method" like : search_for_the_goodone. It is only defined to
+    let son-class's override it.
     """
 
     def __init__(self, serie: np.ndarray, max_order_set: Iterable[int], train_len: int, forecast_range: int
@@ -51,12 +53,26 @@ class ArimaMother(MotherModel):
                  , enforce_complexity: Iterable[int] = None):
         """
 
-        :param serie:
-        :param max_order_set:
-        :param train_len:
-        :param forecast_range:
-        :param walk_forward:
-        :param alpha:
+        :param serie: np.ndarray, time serie you want to forecast.
+        :param max_order_set: Iterable[int], for ARIMA and SARIMAX models, it is a list of integer which describes :
+            - the maximal order for the AR, MA and diff for ARIMA models
+            - the maximal order for AR, MA, diff, ARs, MAs, diffs and "seasonal order" for SARIMAX models
+            Our brute force method is going to iterate for all possible permutation from that set of orders
+        :param train_len: int, the observation number the model is going to use to train.
+            Default, it is a walk forward training approach.
+        :param forecast_range: int,
+        :param walk_forward: bool, default value to True.
+            If True, the training process will only take the X (=train_len) last observations in our dataset.
+            If False, it will consider all usable observations
+        :param alpha: float, default value to O.O5.
+            This is the confidence interval used.
+        :param metric: str, default value to 'aic'.
+            Between ('aic', 'bic').
+            The metric is the one we want to minimize when we are brute-forcing for the best model for each period.
+        :param verbose: bool, default value to True.
+        :param enforce_complexity: Iterable[int], default value to None.
+            If None, then the model will brute-force for each period all possible parameter permutations.
+            If Iterable[int], then the __________________________________
         """
 
         # Control type
@@ -81,7 +97,6 @@ class ArimaMother(MotherModel):
             # enforce_complexity = {"p": [], "d": [], "q": []}
             self.enforce_complexity = [0 for i in range(len(self.max_order_set))]
 
-
         self.fit_ = None
         self.forecast_ = None
         self.method = None
@@ -98,11 +113,17 @@ class ArimaMother(MotherModel):
 
     def generate_grid_from_param(self) -> Tuple[slice]:
         """
+        :return: It generates a tuple containing slice object, use for the brute-force optimisation.
         """
         return tuple([slice(self.enforce_complexity[i], self.max_order_set[i], 1) \
                       for i in range(len(self.max_order_set))])
 
     def mean_time_weighted(self, mat_pred_during_time: np.ndarray) -> List[np.ndarray]:
+        """
+
+        :param mat_pred_during_time:
+        :return:
+        """
         shape_mat_transpose = mat_pred_during_time.T.shape[0]
         stock_wma = []
         num_notzero_col = np.count_nonzero(mat_pred_during_time, axis=0)
@@ -137,12 +158,18 @@ class ArimaMother(MotherModel):
         return stock_wma
 
     def search_for_the_goodone(self, start) -> Dict[str, Any]:
+        """
+        Abstract class, used to call without errors self.time_looping()
+
+        :param start:
+        :return:
+        """
         return {"1": 1}
 
     def time_looping(self) -> List[Dict[str, Any]]:
-        good_list= []
+        good_list = []
         # return [self.search_for_the_goodone(i) for i in range(self.num_forecasting)]
-        for i in tqdm(range(self.num_forecasting), desc= "Computing"):
+        for i in tqdm(range(self.num_forecasting), desc="Computing"):
             good_list.append(self.search_for_the_goodone(i))
 
         return good_list
