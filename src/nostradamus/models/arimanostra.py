@@ -16,7 +16,7 @@ class ArimaNostra(ArimaMother):
 
         super().__init__(serie, max_order_set, train_len, forecast_range
                          , walk_forward=walk_forward, alpha=alpha, metric=metric, verbose=verbose
-                         , enforce_complexity= enforce_complexity, workers= None)
+                         , enforce_complexity= enforce_complexity)
 
         self.grid_params = self.generate_grid_from_param()
 
